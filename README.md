@@ -1,11 +1,18 @@
 ## Fra template til teaminstans
 
-Denne branchen er utgangspunktet for en egen `sf-arkiv`-instans i teamets namespace.
+Dette template-repoet er utgangspunktet for en egen `sf-arkiv`-instans i teamets namespace.
 
-1. Opprett et eget repository fra denne branchen, for eksempel `sf-arkiv-<team-namespace>`. Hvis du bruker GitHubs «Use this template», må du ta med denne branchen og bruke innholdet her som utgangspunkt for `main` i det nye repoet. Legg også det nye repoet til under Repositories for teamet i Nais Console, slik at GitHub Actions får lov til å deploye appen til ønsket namespace.
-2. Bruk IDE-ens søk og erstatt i hele prosjektet: erstatt `template` med teamets namespace. Dette oppdaterer blant annet namespace, team, ingresser, ConfigMap-navn, workflow og lenker. Kontroller at `team` i workflow og Nais-manifestene er teamets faktiske Nais-team hvis det er forskjellig fra namespace. Behold appnavnet `sf-arkiv` og Salesforce-reglene med `teamcrm` og `dev-external`/`prod-external`.
+1. Velg «Use this template» → «Create a new repository» i GitHub, og gi repoet et navn, for eksempel `sf-arkiv-<team-namespace>`. Legg det nye repoet til under Repositories for teamet i Nais Console, slik at GitHub Actions får deploye til teamets namespace.
+2. Bruk IDE-ens søk og erstatt i hele prosjektet: erstatt `template` med teamets namespace. Dette oppdaterer blant annet namespace, team, ingresser, workflow og lenker. Kontroller at `team` i workflow og Nais-manifestene er teamets faktiske Nais-team hvis det er forskjellig fra namespace. Behold appnavnet og ConfigMap-navnet `sf-arkiv` og Salesforce-reglene med `teamcrm` og `dev-external`/`prod-external`.
 3. Kontroller at `ArkivTable` samsvarer med ønsket datamodell. Ved endringer må du også oppdatere DTO-en `Arkiv`, tilhørende funksjoner, tester og OpenAPI-spesifikasjonen. Kontroller også `gcp.sqlInstances` i Nais-manifestene: dev bruker minste tier (`db-f1-micro`), mens prod bruker minste tier som omfattes av Cloud SQL-SLA (`db-custom-1-3840`), med `diskAutoresize: true`.
-4. Gi det nye repoet tilgang til teamets deploy og Artifact Registry i Nais Console. Opprett en ConfigMap med navnet `sf-arkiv-<team-namespace>` i teamets namespace i både `dev-gcp` og `prod-gcp`. Legg inn verdiene i tabellen nedenfor som strenger, uten anførselstegn i selve verdien.
+4. Gå til teamets namespace i Nais Console og legg til det nye repoet under Repositories for å tillate deploy. Opprett en ConfigMap med navnet `sf-arkiv` i teamets namespace i både `dev-gcp` og `prod-gcp`. Legg inn verdiene i tabellen nedenfor som strenger, uten anførselstegn i selve verdien.
+
+   Et raskt alternativ er å bruke fila `configmap` i repoets rot. Kjør fra repoets rot:
+
+   ```sh
+   kubectl apply -f configmap -n <team-namespace> --context dev-gcp
+   kubectl apply -f configmap -n <team-namespace> --context prod-gcp
+   ```
 
 | ConfigMap-nøkkel | Før første deploy (dev og prod) | Etter initialisering (dev og prod) |
 |---|---------------------------------|---|

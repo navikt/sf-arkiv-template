@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sf-arkiv
+  namespace: template
+  labels:
+    app.kubernetes.io/managed-by: console
+    nais.io/managed-by: console
+  annotations:
+    reloader.stakater.com/match: "true"
+data:
+  DEV_TEST_BYPASS_ALLOWED: "false"
+  HENTE_ALLOWED: "false"
+  DB_INIT_ALLOWED: "true"
+  DUMMY_READ_TO_TEST_READINESS: "false"

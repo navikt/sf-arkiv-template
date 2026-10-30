@@ -45,4 +45,4 @@ spec:
           namespace: teamcrm
           cluster: prod-external
   envFrom:
-    - configmap: sf-arkiv-template
+    - configmap: sf-arkiv
