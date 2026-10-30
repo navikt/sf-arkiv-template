@@ -1,0 +1,212 @@
+openapi: 3.0.1
+info:
+  title: Arkiv dokumentasjon
+  description: API for arkiv dokumentasjon
+  version: "1.0"
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /arkiv:
+    post:
+      tags:
+        - Arkiv
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Arkiv'
+        required: true
+      responses:
+        201:
+          description: OK - arkivert
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArkivResponse'
+        400:
+          description: Ugyldig forespørsel, f.eks. ugyldig dokumentdato eller for lange verdier
+        401:
+          description: Gyldig token mangler
+          content: {}
+      x-codegen-request-body-name: body
+  /hente:
+    post:
+      tags:
+        - Arkiv
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hente'
+            example:
+              kilde: "test"
+        required: true
+      description: |
+        Beregnet for verifisering av integrasjonen; normalt deaktivert etter testing via HENTE_ALLOWED.
+        Send bare feltene du vil filtrere på, f.eks. `{"kilde":"test"}`. Minst ett felt må være utfylt.
+        Alle utfylte felter må matche (AND); utelatte og tomme felter ignoreres.
+        Oppføringer med `konfidentiellt: true` returneres ikke. Antallet som matchet søket, men ble utelatt,
+        vises i responsheaderen `x-konfidentiellt-skipped`.
+      responses:
+        200:
+          description: OK
+          headers:
+            x-konfidentiellt-skipped:
+              description: Antall konfidensielle oppføringer som matchet søket, men ikke ble returnert
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HenteResponse'
+        400:
+          description: Ugyldig forespørsel
+        403:
+          description: Henting er deaktivert (HENTE_ALLOWED er ikke "true")
+        401:
+          description: Gyldig token mangler
+          content: {}
+      x-codegen-request-body-name: body
+  /authping:
+    get:
+      tags:
+        - Arkiv
+      description: Sjekker om forespørselen har et gyldig token
+      responses:
+        200:
+          description: "Auth: true eller Auth: false"
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Arkiv:
+      type: object
+      required:
+        - dokumentdato
+      properties:
+        dokumentasjon:
+          type: string
+        kilde:
+          type: string
+          maxLength: 43
+        opprettetAv:
+          type: string
+          maxLength: 50
+        dokumentasjonId:
+          type: string
+          maxLength: 20
+        dokumentdato:
+          type: string
+          format: date
+          example: "2021-01-02"
+        aktoerid:
+          type: string
+          maxLength: 14
+        fnr:
+          type: string
+          maxLength: 13
+        orgnr:
+          type: string
+          maxLength: 13
+        tema:
+          type: string
+          maxLength: 50
+        konfidentiellt:
+          type: boolean
+          default: false
+          description: |
+            Valgfritt; standard er false. Hvis angitt, må verdien være true eller false (ikke tekst eller null).
+            Ved true lagres oppføringen, men den returneres ikke fra /hente.
+    ArkivResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        dato:
+          type: string
+        opprettetAv:
+          type: string
+        kilde:
+          type: string
+        dokumentasjonId:
+          type: string
+        dokumentasjonSummarized:
+          type: string
+          description: Antall tegn i dokumentasjon
+          example: "51 characters"
+        dokumentdato:
+          type: string
+          format: date
+        konfidentiellt:
+          type: boolean
+    Hente:
+      type: object
+      description: Bare felt du vil filtrere på trenger å sendes. Minst ett felt må være utfylt; alle utfylte felt må matche.
+      properties:
+        id:
+          type: string
+          default: ""
+        kilde:
+          type: string
+          default: ""
+        dokumentasjonId:
+          type: string
+          default: ""
+        dokumentdato:
+          type: string
+          default: ""
+        aktoerid:
+          type: string
+          default: ""
+        fnr:
+          type: string
+          default: ""
+        orgnr:
+          type: string
+          default: ""
+        tema:
+          type: string
+          default: ""
+    HenteResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        dato:
+          type: string
+        dokumentasjonId:
+          type: string
+        dokumentasjon:
+          type: string
+        dokumentdato:
+          type: string
+          format: date
+        kilde:
+          type: string
+        opprettetAv:
+          type: string
+        aktoerid:
+          type: string
+        fnr:
+          type: string
+        orgnr:
+          type: string
+        tema:
+          type: string

@@ -1,0 +1,92 @@
+name: Build, push, and deploy
+
+on:
+  push:
+    branches-ignore:
+      - 'chore/**'
+  pull_request:
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup java v6.1.0
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - name: Build and run tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew test
+  build:
+    name: Build and push Docker container
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+    outputs:
+      image: ${{ steps.docker-push.outputs.image }}
+    steps:
+      - name: Checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Setup java v6.1.0
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - name: Setup Gradle v6.4.1
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-disabled: true
+          dependency-graph: generate-and-submit
+          dependency-graph-report-dir: dependency-graph-reports
+      - name: Build JAR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew clean build shadowJar -x test
+      - name: Nais Docker Build Push
+        uses: nais/docker-build-push@dd7421d5068057a020ca46ead966c26190c516b1 # v0
+        id: docker-push
+        with:
+          team: template
+  deploy-dev:
+    name: Deploy to dev-gcp
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Nais Deploy v3
+        uses: nais/deploy/actions/deploy@6a9dcd6df697ec2d38edc78cadb0b9acd1232f50 # v3
+        env:
+          CLUSTER: dev-gcp
+          RESOURCE: .nais/dev.yaml
+          VAR: image=${{ needs.build.outputs.image }},DEPLOY_CLUSTER=dev-gcp
+  deploy-prod:
+    name: Deploy to prod-gcp
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Nais Deploy v3
+        uses: nais/deploy/actions/deploy@6a9dcd6df697ec2d38edc78cadb0b9acd1232f50 # v3
+        env:
+          CLUSTER: prod-gcp
+          RESOURCE: .nais/prod.yaml
+          VAR: image=${{ needs.build.outputs.image }},DEPLOY_CLUSTER=prod-gcp
