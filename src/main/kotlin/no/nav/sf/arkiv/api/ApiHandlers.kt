@@ -137,7 +137,7 @@ class ApiHandlers(
         if (henteModel == null) {
             Metrics.issues.inc()
             Response(Status.BAD_REQUEST).body("Request must contain a valid JSON object with search parameters")
-        } else if (isDevTestBypassAllowed && henteModel.kilde == "test" || tokenValidator.firstValidToken(r) != null) {
+        } else if ((isDevTestBypassAllowed && henteModel.kilde == "test") || tokenValidator.firstValidToken(r) != null) {
             log.info { "Authorized call to Hente" }
             if (henteModel.isEmpty()) {
                 Response(Status.BAD_REQUEST).body("Request contains no search parameters, that is not allowed")
